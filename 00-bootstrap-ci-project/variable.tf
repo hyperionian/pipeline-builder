@@ -160,13 +160,13 @@ variable "kms_prevent_destroy" {
 variable "terraform_version" {
   description = "Default terraform version."
   type        = string
-  default     = "1.0.2"
+  default     = "1.0.11"
 }
 
 variable "terraform_version_sha256sum" {
   description = "sha256sum for default terraform version."
   type        = string
-  default     = "7329f887cc5a5bda4bedaec59c439a4af7ea0465f83e3c1b0f4d04951e1181f4"
+  default     = "eeb46091a42dc303c3a3c300640c7774ab25cbee5083dafa5fd83b54c8aca664"
 }
 
 variable "terraform_validator_release" {
@@ -178,13 +178,13 @@ variable "terraform_validator_release" {
 variable "cloudbuild_plan_filename" {
   description = "Path and name of Cloud Build Config file definition used for terraform plan."
   type        = string
-  default     = "cloudbuild-tf-plan.yaml"
+  default     = "cb-tf-plan.yaml"
 }
 
 variable "cloudbuild_apply_filename" {
   description = "Path and name of Cloud Build Config definition used for terraform apply."
   type        = string
-  default     = "cloudbuild-tf-apply.yaml"
+  default     = "cb-tf-apply.yaml"
 }
 
 variable "terraform_apply_branches" {
