@@ -1,0 +1,52 @@
+timeout: 3600s
+substitutions:
+  _BASE_DIR: 'base-resources'
+steps:
+- id: 'setup'
+  name: $_DEFAULT_REGION-docker.pkg.dev/$PROJECT_ID/$_GAR_REPOSITORY/terraform
+  entrypoint: /bin/bash
+  args:
+  - -c
+  - |
+    tf_sa_email=${_TF_SA_EMAIL}
+    if [[ -n ${tf_sa_email} ]]; then
+      echo "Setting up gcloud for impersonation"
+      gcloud config set auth/impersonate_service_account $tf_sa_email
+    fi
+    echo "Adding bucket information to backends"
+    for i in `find -name 'backend.tf'`; do sed -i 's/UPDATE_ME/${_STATE_BUCKET_NAME}/' $i; done
+# [START Terraform plan]
+- id: 'terraform plan'
+  name: $_DEFAULT_REGION-docker.pkg.dev/$PROJECT_ID/$_GAR_REPOSITORY/terraform
+  entrypoint: /bin/bash
+  args:
+  - -c
+  - |
+      set -eo pipefail
+      cd ${_BASE_DIR}
+      terraform fmt -recursive -check -diff .
+      terraform init
+      terraform plan \
+      -input=false  \
+      -out="../${_BASE_DIR}/tfplan_${BUILD_ID}.yaml"|| exit 1
+
+# [START Terraform apply]
+- id: 'terraform apply'
+  name: $_DEFAULT_REGION-docker.pkg.dev/$PROJECT_ID/$_GAR_REPOSITORY/terraform
+  entrypoint: /bin/bash
+  args:
+  - -c
+  - |
+      set -eo pipefail
+      cd $_BASE_DIR
+      terraform fmt -recursive -check -diff .
+      terraform init
+      terraform apply \
+      --auto-approve \
+      "../${_BASE_DIR}/tfplan_${BUILD_ID}.yaml" || exit 1
+artifacts:
+  objects:
+    location: 'gs://${_ARTIFACT_BUCKET_NAME}/terraform/cloudbuild/plan/${BUILD_ID}'
+    paths: ['cb-tf-apply.yaml', 'tfplan_${BUILD_ID}.yaml']
+options:
+  logging: CLOUD_LOGGING_ONLY
