@@ -186,7 +186,7 @@ module "k8s_sa_platform" {
   project_id    = var.project_id
   clustername   = google_container_cluster.platform.name
   clustercacert = google_container_cluster.platform.master_auth.0.cluster_ca_certificate
-  k8shost       = google_container_cluster.platform.endpoint
+  k8shost       = "https://${google_container_cluster.platform.endpoint}"
 }
 
 module "k8s_sa_dev" {
@@ -194,5 +194,5 @@ module "k8s_sa_dev" {
   project_id    = var.project_id
   clustername   = google_container_cluster.dev.name
   clustercacert = google_container_cluster.dev.master_auth.0.cluster_ca_certificate
-  k8shost       = google_container_cluster.dev.endpoint
+  k8shost       = "https://${google_container_cluster.dev.endpoint}"
 }
