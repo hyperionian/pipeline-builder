@@ -78,12 +78,29 @@ variable "activate_apis" {
     "iam.googleapis.com",
     "admin.googleapis.com",
     "appengine.googleapis.com",
-    "storage-api.googleapis.com"
+    "storage-api.googleapis.com",
+    "serviceusage.googleapis.com",
+    "iamcredentials.googleapis.com",
   ]
 }
 
 variable "sa_org_iam_permissions" {
-  description = "List of permissions granted to Terraform service account across the GCP organization."
+  description = "List of permissions granted to Terraform and Cloud Build service account across the GCP organization. Update this list if you need to grant additional permissions."
+  type        = list(string)
+  default = [
+    "roles/compute.networkAdmin",
+    "roles/iam.securityAdmin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/logging.configWriter",
+    "roles/compute.admin",
+    "roles/pubsub.editor",
+    "roles/cloudfunctions.developer",
+    "roles/storage.admin"
+  ]
+}
+
+variable "cb_project_iam_permissions" {
+  description = "List of permissions granted to Cloud Build service account for the new Project. Update this list if you want to grant more permissions to deploy other Google Cloud resources."
   type        = list(string)
   default = [
     "roles/compute.networkAdmin",
