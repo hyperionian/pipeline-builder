@@ -47,6 +47,6 @@ steps:
 artifacts:
   objects:
     location: 'gs://${_ARTIFACT_BUCKET_NAME}/terraform/cloudbuild/plan/${BUILD_ID}'
-    paths: ['cb-tf-apply.yaml', 'tfplan_${BUILD_ID}.yaml']
+    paths: ['cb-tf-apply.yaml', '${_BASE_DIR}/tfplan_${BUILD_ID}.yaml']
 options:
   logging: CLOUD_LOGGING_ONLY
