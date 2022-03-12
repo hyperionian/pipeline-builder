@@ -1,7 +1,7 @@
 # CI Pipeline Builder
 
 ## Overview
-This example is used to bootstrap a CI pipeline for Infrastructure as a Code using Terraform in an existing GCP project. All the Terraform code is provided as-is, any use of them are subject to customer agreement with Google.
+This example is used to bootstrap a CI pipeline for Infrastructure as a Code using Terraform in an existing GCP project that you have access to.
 
 ## [Bootstrap CI Pipeline](00-bootstrap-ci-project/)
 
@@ -57,7 +57,7 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
     ```
    Update the following variables to 
 
-    `project_id= "test-project-66"`
+    `project_id= "your-project-id"`
 
     `default_region= "australia-southeast2"`
 
@@ -76,12 +76,12 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
 
 In this example, we are deplyoing compute resource into the same project as the CI pipeline in `us-central1-a` zone
 
-1. Clone the new Cloud Source Repo created. In this example, the cloud source repo name is `app-infra` and the project name we referred for the CI Pipeline is `test-project-66-335901`. Ignore the warning "You appear to have cloned an empty repository"
+1. Clone the new Cloud Source Repo created. In this example, the cloud source repo name is `app-infra` and the project name we referred for the CI Pipeline is `your-project-id`. Ignore the warning "You appear to have cloned an empty repository"
     ```bash
     cd ~
     export REPO_NAME=app-infra
-    export PROJECT_ID=test-project-66-335901
-    gcloud source repos clone app-infra --project=test-project-66-355901
+    export PROJECT_ID=your-project-id
+    gcloud source repos clone app-infra --project=your-project-id
     ```
 
 1. Navigate to the repo and change to a non prod branch, for example `dev` branch
@@ -95,10 +95,9 @@ In this example, we are deplyoing compute resource into the same project as the 
     ```bash
     cp -R ~/terraform-cloudbuild-configsync/security/ci-pipeline/sample-compute .
     ```
-1. Update terraform.tfvars file under sample-compute directory to the project ID where the GCE instance will be deployed. In this example it will be the same project as the CI pipeline `test-project-66-335901`
+1. Update terraform.tfvars file under sample-compute directory to the project ID where the GCE instance will be deployed. In this example it will be the same project as the CI pipeline `your-project-id`
     ```bash
-    project_id="test-project-66-335901
-
+    project_id="your-proejct-id"
     ```
 
 1. Copy Cloud Build configuration files [build-config](build-config/) for Terraform
