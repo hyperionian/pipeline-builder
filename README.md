@@ -99,7 +99,6 @@ In this example, we are deplyoing compute resource into the same project as the 
     ```bash
     project_id="your-proejct-id"
     ```
-
 1. Copy Cloud Build configuration files [build-config](build-config/) for Terraform
     ```bash
     cp -R ~terraform-cloudbuild-configsync/build-config/cloudbuild-* .
