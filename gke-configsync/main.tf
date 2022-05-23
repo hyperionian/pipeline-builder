@@ -20,6 +20,28 @@ module "enabled_google_apis" {
   ]
 }
 
+resource "google_compute_subnetwork" "platform-subnet" {
+  name          = "gke-platform-subnet"
+  ip_cidr_range = "10.2.0.0/16"
+  region        = "us-central1"
+  project = var.project_id
+  network       = google_compute_network.gke-net.id
+}
+
+resource "google_compute_subnetwork" "dev-subnet" {
+  name          = "gke-dev-subnet"
+  ip_cidr_range = "10.3.0.0/16"
+  region        = "us-east1"
+  project = var.project_id
+  network       = google_compute_network.gke-net.id
+}
+
+
+resource "google_compute_network" "gke-net" {
+  name                    = "gke-network"
+  project = var.project_id
+  auto_create_subnetworks = false
+}
 # Deploy 2 GKE clusters with VPC Native
 
 resource "google_container_cluster" "platform" {
@@ -29,6 +51,8 @@ resource "google_container_cluster" "platform" {
   name = "platform-admin"
   # location is the GCP zone your GKE cluster is deployed to. 
   location = "us-central1-f"
+  network = google_compute_network.gke-net.self_link
+  subnetwork = google_compute_subnetwork.platform-subnet.self_link
   ip_allocation_policy {
     cluster_ipv4_cidr_block  = "10.39.0.0/21"
     services_ipv4_cidr_block = "10.10.10.0/24"
@@ -55,6 +79,9 @@ resource "google_container_cluster" "platform" {
   depends_on = [
     module.enabled_google_apis
   ]
+  timeouts {
+    create = "30m"
+  }
 }
 
 # Platform Admin cluster - node pool 
@@ -67,6 +94,7 @@ resource "google_container_node_pool" "platform-nodes" {
 
   # Node's API scope 
   node_config {
+    service_account = var.compute_serviceaccount
     oauth_scopes = [
       "https://www.googleapis.com/auth/logging.write",
       "https://www.googleapis.com/auth/monitoring",
@@ -95,6 +123,8 @@ resource "google_container_cluster" "dev" {
   name     = "my-dev"
   location = "us-east1-c"
   provider = google-beta
+  network = google_compute_network.gke-net.self_link
+  subnetwork = google_compute_subnetwork.dev-subnet.self_link
   ip_allocation_policy {
     cluster_ipv4_cidr_block  = "10.32.0.0/21"
     services_ipv4_cidr_block = "10.10.11.0/24"
@@ -108,6 +138,9 @@ resource "google_container_cluster" "dev" {
   depends_on = [
     module.enabled_google_apis
   ]
+  timeouts {
+    create = "30m"
+  }
 }
 
 # Dev cluster node pool
@@ -119,6 +152,7 @@ resource "google_container_node_pool" "dev-nodes" {
   node_count = var.gke_num_nodes
 
   node_config {
+    service_account = var.compute_serviceaccount
     oauth_scopes = [
       "https://www.googleapis.com/auth/logging.write",
       "https://www.googleapis.com/auth/monitoring",

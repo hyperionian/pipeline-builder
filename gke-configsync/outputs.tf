@@ -47,8 +47,3 @@ output "Kubernetes_Service_Account_Name_my_dev" {
   value       = module.k8s_sa_platform.k8s_service_account_name
   description = "Kubernetes Service Account Name"
 }
-
-output "project_number" {
-  value       = data.google_project.project_number.number
-  description = "Project Number"
-}

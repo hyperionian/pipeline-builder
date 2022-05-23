@@ -17,6 +17,10 @@ variable "group_org_admins" {
   type        = string
 }
 
+/******************************************
+  Optional variables
+*******************************************/
+
 variable "default_region" {
   description = "Default region to create resources where applicable."
   type        = string
@@ -24,26 +28,22 @@ variable "default_region" {
 }
 
 variable "state_bucket_name" {
-  description = "Custom state bucket name. If not supplied, the default name is {project_prefix}-tfstate-{random suffix}."
+  description = "Custom state bucket name. If not supplied, the default name is {project_prefix}-tfstate-{random_suffix}."
   default     = ""
   type        = string
 }
 
 variable "tf_service_account_id" {
-  description = "ID of service account for terraform in seed project"
+  description = "ID of service account for terraform"
   type        = string
   default     = "terraform-org"
 }
 
 variable "tf_service_account_name" {
-  description = "Display name of service account for terraform in seed project"
+  description = "Display name of service account for terraform"
   type        = string
   default     = "Organization Terraform Account"
 }
-
-/******************************************
-  Optional variables
-*******************************************/
 
 variable "project_labels" {
   description = "Labels to apply to the project."
@@ -54,7 +54,7 @@ variable "project_labels" {
 variable "project_prefix" {
   description = "Name prefix to use for projects created."
   type        = string
-  default     = "cb"
+  default     = "ci"
 }
 
 variable "project_id" {
@@ -91,16 +91,23 @@ variable "sa_org_iam_permissions" {
     "roles/compute.networkAdmin",
     "roles/iam.securityAdmin",
     "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountUser",
     "roles/logging.configWriter",
+    "roles/logging.logWriter",
     "roles/compute.admin",
     "roles/pubsub.editor",
     "roles/cloudfunctions.developer",
-    "roles/storage.admin"
+    "roles/container.clusterAdmin",
+    "roles/gkehub.editor",
+    "roles/container.admin",
+    "roles/gkehub.editor",
+    "roles/source.admin",
+    "roles/serviceusage.serviceUsageAdmin"
   ]
 }
 
 variable "cb_project_iam_permissions" {
-  description = "List of permissions granted to Cloud Build service account for the new Project. Update this list if you want to grant more permissions to deploy other Google Cloud resources."
+  description = "List of permissions granted to Cloud Build service accounts for the new Project. Update this list if you want to grant more permissions to deploy other Google Cloud resources."
   type        = list(string)
   default = [
     "roles/compute.networkAdmin",
@@ -110,7 +117,10 @@ variable "cb_project_iam_permissions" {
     "roles/compute.admin",
     "roles/pubsub.editor",
     "roles/cloudfunctions.developer",
-    "roles/storage.admin"
+    "roles/container.clusterAdmin",
+    "roles/gkehub.editor",
+    "roles/container.clusterAdmin",
+    "roles/gkehub.editor"
   ]
 }
 variable "sa_enable_impersonation" {

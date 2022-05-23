@@ -16,13 +16,13 @@ resource "random_id" "suffix" {
   byte_length = 2
 }
 
-data "google_organization" "org" {
-  organization = var.org_id
-}
+#data "google_organization" "org" {
+#  organization = var.org_id
+#}
 
 module "cloudbuild_project" {
   source                      = "terraform-google-modules/project-factory/google"
-  version                     = "~> 10.1.1"
+  version                     = "~> 10.1"
   name                        = local.cloudbuild_project_id
   random_project_id           = var.random_suffix
   disable_services_on_destroy = false
@@ -68,6 +68,8 @@ module "kms" {
   prevent_destroy = var.kms_prevent_destroy
 }
 
+/*** Terraform state bucket ***/
+
 resource "google_storage_bucket" "org_terraform_state" {
   project                     = module.cloudbuild_project.project_id
   name                        = local.state_bucket_name
@@ -84,77 +86,6 @@ resource "google_storage_bucket" "org_terraform_state" {
     content {
       default_kms_key_name = module.kms[0].keys["${var.project_prefix}-key"]
     }
-  }
-}
-
-/*** Assign Project Level IAM Policy to Terraform Service Account  ***/
-
-resource "google_project_iam_member" "tf_sa_perms" {
-  for_each = toset(var.sa_org_iam_permissions)
-
-  project = module.cloudbuild_project.project_id
-  role    = each.value
-  member  = "serviceAccount:${google_service_account.terraform_sa.email}"
-}
-
-/*** Assign Storage Admin  to Terraform Service Account  ***/
-
-resource "google_storage_bucket_iam_member" "tfsa_state_iam" {
-  bucket = google_storage_bucket.org_terraform_state.name
-  role   = "roles/storage.admin"
-  member = "serviceAccount:${google_service_account.terraform_sa.email}"
-}
-
-/*** Allow Org Admin to impersonate Terraform Service Account  ***/
-
-resource "google_service_account_iam_member" "org_admin_sa_impersonate_permissions" {
-  count = local.impersonation_enabled_count
-
-  service_account_id = google_service_account.terraform_sa.name
-  role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "group:${var.group_org_admins}"
-}
-
-resource "google_organization_iam_member" "org_admin_serviceusage_consumer" {
-  count = local.impersonation_enabled_count
-
-  org_id = var.org_id
-  role   = "roles/serviceusage.serviceUsageConsumer"
-  member = "group:${var.group_org_admins}"
-}
-
-resource "google_storage_bucket_iam_member" "orgadmins_state_iam" {
-  count = local.impersonation_enabled_count
-
-  bucket = google_storage_bucket.org_terraform_state.name
-  role   = "roles/storage.admin"
-  member = "group:${var.group_org_admins}"
-}
-
-/*** 
-Cloud Build Pipeline 
-***/
-resource "google_project_iam_member" "org_admins_cloudbuild_editor" {
-  project = module.cloudbuild_project.project_id
-  role    = "roles/cloudbuild.builds.editor"
-  member  = "group:${var.group_org_admins}"
-}
-
-resource "google_project_iam_member" "org_admins_cloudbuild_viewer" {
-  project = module.cloudbuild_project.project_id
-  role    = "roles/viewer"
-  member  = "group:${var.group_org_admins}"
-}
-
-
-resource "google_storage_bucket" "cloudbuild_artifacts" {
-  project                     = module.cloudbuild_project.project_id
-  name                        = format("%s-%s-%s", var.project_prefix, "cloudbuild-artifacts", random_id.suffix.hex)
-  location                    = var.default_region
-  labels                      = var.storage_bucket_labels
-  uniform_bucket_level_access = true
-  versioning {
-    enabled = true
   }
 }
 
@@ -208,6 +139,52 @@ resource "google_kms_crypto_key_iam_binding" "cloud_build_crypto_key_encrypter" 
   ]
 }
 
+
+/*** Assign Project Level IAM Policy to Terraform Service Account  ***/
+
+resource "google_project_iam_member" "tf_sa_perms" {
+  for_each = toset(var.sa_org_iam_permissions)
+
+  project = module.cloudbuild_project.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.terraform_sa.email}"
+}
+
+/*** Assign Storage Admin  to Terraform Service Account  ***/
+
+resource "google_storage_bucket_iam_member" "tfsa_state_iam" {
+  bucket = google_storage_bucket.org_terraform_state.name
+  role   = "roles/storage.admin"
+  member = "serviceAccount:${google_service_account.terraform_sa.email}"
+}
+
+/*** Allow Org Admin to impersonate Terraform Service Account and access terraform state bucket ***/
+
+resource "google_service_account_iam_member" "org_admin_sa_impersonate_permissions" {
+  count = local.impersonation_enabled_count
+
+  service_account_id = google_service_account.terraform_sa.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "group:${var.group_org_admins}"
+}
+
+
+resource "google_storage_bucket_iam_member" "orgadmins_state_iam" {
+  count = local.impersonation_enabled_count
+
+  bucket = google_storage_bucket.org_terraform_state.name
+  role   = "roles/storage.admin"
+  member = "group:${var.group_org_admins}"
+}
+
+resource "google_organization_iam_member" "org_admin_serviceusage_consumer" {
+  count = local.impersonation_enabled_count
+
+  org_id = var.org_id
+  role   = "roles/serviceusage.serviceUsageConsumer"
+  member = "group:${var.group_org_admins}"
+}
+
 /******************************************
   Create Cloud Source Repos
 *******************************************/
@@ -218,13 +195,44 @@ resource "google_sourcerepo_repository" "csr_git" {
   name     = each.value
 }
 
-/*** Cloud Source Repo Project level IAM policy ***/
+/*** Cloud Source Repo Project level IAM policy for Org Admin ***/
 
 resource "google_project_iam_member" "org_admins_source_repo_admin" {
   count   = var.create_cloud_source_repos ? 1 : 0
   project = module.cloudbuild_project.project_id
   role    = "roles/source.admin"
   member  = "group:${var.group_org_admins}"
+}
+
+/********************************************************
+IAM Policy for Org Admin to manage Cloud Build Pipeline
+*********************************************************/
+
+resource "google_project_iam_member" "org_admins_cloudbuild_editor" {
+  project = module.cloudbuild_project.project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "group:${var.group_org_admins}"
+}
+
+resource "google_project_iam_member" "org_admins_cloudbuild_viewer" {
+  project = module.cloudbuild_project.project_id
+  role    = "roles/viewer"
+  member  = "group:${var.group_org_admins}"
+}
+
+/***********************************************
+ Cloud Build - Artifcacts Cloud Storage Bucket
+ ***********************************************/
+
+resource "google_storage_bucket" "cloudbuild_artifacts" {
+  project                     = module.cloudbuild_project.project_id
+  name                        = format("%s-%s-%s", var.project_prefix, "cloudbuild-artifacts", random_id.suffix.hex)
+  location                    = var.default_region
+  labels                      = var.storage_bucket_labels
+  uniform_bucket_level_access = true
+  versioning {
+    enabled = true
+  }
 }
 
 /***********************************************
@@ -251,8 +259,8 @@ resource "google_cloudbuild_trigger" "main_trigger" {
     _ARTIFACT_BUCKET_NAME = google_storage_bucket.cloudbuild_artifacts.name
     _TF_ACTION            = "apply"
   }
-
-  filename = var.cloudbuild_apply_filename
+  service_account = google_service_account.terraform_sa.id
+  filename        = var.cloudbuild_apply_filename
   depends_on = [
     google_sourcerepo_repository.csr_git
   ]
@@ -283,8 +291,8 @@ resource "google_cloudbuild_trigger" "non_main_trigger" {
     _ARTIFACT_BUCKET_NAME = google_storage_bucket.cloudbuild_artifacts.name
     _TF_ACTION            = "plan"
   }
-
-  filename = var.cloudbuild_plan_filename
+  service_account = google_service_account.terraform_sa.id
+  filename        = var.cloudbuild_plan_filename
   depends_on = [
     google_sourcerepo_repository.csr_git,
   ]
@@ -308,6 +316,7 @@ resource "google_artifact_registry_repository" "tf-image-repo" {
  Cloud Build - Terraform builder
  ***********************************************/
 
+
 resource "null_resource" "cloudbuild_terraform_builder" {
   triggers = {
     project_id_cloudbuild_project = module.cloudbuild_project.project_id
@@ -330,14 +339,6 @@ resource "null_resource" "cloudbuild_terraform_builder" {
   ]
 }
 
-/***Cloud Build artefacts - IAM Policy ***/
-
-resource "google_storage_bucket_iam_member" "cloudbuild_artifacts_iam" {
-  bucket = google_storage_bucket.cloudbuild_artifacts.name
-  role   = "roles/storage.admin"
-  member = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
-}
-
 resource "google_artifact_registry_repository_iam_member" "terraform-image-iam" {
   provider = google-beta
   project  = module.cloudbuild_project.project_id
@@ -346,6 +347,30 @@ resource "google_artifact_registry_repository_iam_member" "terraform-image-iam" 
   repository = google_artifact_registry_repository.tf-image-repo.name
   role       = "roles/artifactregistry.writer"
   member     = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+}
+
+resource "google_artifact_registry_repository_iam_member" "tfsa-artifactregistry-iam" {
+  provider = google-beta
+  project  = module.cloudbuild_project.project_id
+
+  location   = google_artifact_registry_repository.tf-image-repo.location
+  repository = google_artifact_registry_repository.tf-image-repo.name
+  role       = "roles/artifactregistry.writer"
+  member = "serviceAccount:${google_service_account.terraform_sa.email}"
+}
+
+/***Cloud Build Artifacts Cloud Storage Bucket - IAM Policy ***/
+
+resource "google_storage_bucket_iam_member" "cloudbuild_artifacts_iam" {
+  bucket = google_storage_bucket.cloudbuild_artifacts.name
+  role   = "roles/storage.admin"
+  member = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "cloudbuild_artifacts_tf_iam" {
+  bucket = google_storage_bucket.cloudbuild_artifacts.name
+  role   = "roles/storage.admin"
+  member = "serviceAccount:${google_service_account.terraform_sa.email}"
 }
 
 /*** Assign Cloud Build project level IAM policy ***/
@@ -362,7 +387,7 @@ resource "google_project_iam_member" "cb_sa_perms" {
 resource "google_service_account_iam_member" "cloudbuild_terraform_sa_impersonate_permissions" {
   count = local.impersonation_enabled_count
 
-  service_account_id = google_service_account.terraform_sa.email
+  service_account_id = google_service_account.terraform_sa.id
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
 }
@@ -375,7 +400,7 @@ resource "google_organization_iam_member" "cloudbuild_serviceusage_consumer" {
   member = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
 }
 
-# Required to allow cloud build to access state with impersonation.
+# Required to allow cloud build to access state bucket
 
 resource "google_storage_bucket_iam_member" "cloudbuild_state_iam" {
   count = local.impersonation_enabled_count

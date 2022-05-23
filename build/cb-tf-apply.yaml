@@ -1,6 +1,6 @@
 timeout: 3600s
 substitutions:
-  _BASE_DIR: 'base-resources'
+  _BASE_DIR: 'gke-configsync'
 steps:
 - id: 'setup'
   name: $_DEFAULT_REGION-docker.pkg.dev/$PROJECT_ID/$_GAR_REPOSITORY/terraform
@@ -22,7 +22,6 @@ steps:
   args:
   - -c
   - |
-      set -eo pipefail
       cd ${_BASE_DIR}
       terraform fmt -recursive -check -diff .
       terraform init
@@ -37,7 +36,6 @@ steps:
   args:
   - -c
   - |
-      set -eo pipefail
       cd $_BASE_DIR
       terraform fmt -recursive -check -diff .
       terraform init

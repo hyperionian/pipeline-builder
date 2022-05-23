@@ -19,6 +19,11 @@ variable "project_id" {
   description = "the GCP project where the cluster will be created"
 }
 
+variable "compute_serviceaccount" {
+  type        = string
+  description = "the service account to use for the node pool"
+}
+
 variable "region" {
   type        = string
   description = "the GCP region where the platform cluster will be created"

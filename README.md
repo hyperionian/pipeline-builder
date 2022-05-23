@@ -1,7 +1,7 @@
 # CI Pipeline Builder
 
 ## Overview
-This example is used to bootstrap a CI pipeline for Infrastructure as a Code using Terraform in an existing GCP project that you have access to.
+This Terraform configurations example is used to bootstrap a CI pipeline for Infrastructure as a Code by creating a new CI pipeline project under Organization you have access to.
 
 ## [Bootstrap CI Pipeline](00-bootstrap-ci-project/)
 
@@ -9,57 +9,40 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
 
 ### Pre-requisites
 
-1. A user account or service account who will execute the deployment is assigned with the following minimum IAM roles at the GCP project to bootstrap CI Pipeline.
+1. A user account or service account who will execute the deployment is assigned with the following IAM roles
 
-    1. IAM roles Source Repository Administrator (roles/source.admin).
-
-    1. IAM roles Service Usage Admin (roles/roles/serviceusage.serviceUsageAdmin)
-
-    1. IAM roles Service Account Admin (roles/iam.serviceAccountAdmin)
-
-    1. IAM roles Service Account User 
-
-    1. IAM roles Cloud Build Editor
-
-    1. IAM roles Project IAM Admin
-
-    1. IAM roles Storage Admin
-
-    1. IAM roles Compute Admin
+- The roles/resourcemanager.organizationAdmin role on the Google Cloud organization
+- The roles/billing.admin role on the billing account
 
 
 1. Clone this repo
 
-    ```bash
     cd ~
     git clone https://github.com/hyperionian/terraform-cloudbuild-configsync.git
     ```
 
 ### Deploy the CI Pipeline
 
-**Terraform Inputs**
+**Terraform Required Inputs**
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:-----:|
-| project_id | Project ID where the CI Pipeline is deployed. | `string` | n/a | yes |
-| default_region| Region for the CI PIpeline  | `string` | australila-southeast1 | yes |
+| org_id | Org ID where the CI pipeline is deployed. | `string` | n/a | yes |
+| billing_account| Billing account for the new CI pipeline project  | `string` | australila-southeast1 | yes|
+| group_org_admins | Google Groups for Org admin users | `string` | n/a | yes |
+| default_region| Region for the CI pipeline components such as Cloud Storage, Artifact Registry| `string` | n/a | yes |
 
 
 1. Change into [00-bootstrap-ci-project](00-bootstrap-ci-project/)
 
     ```bash
-    cd terraform-cloudbuild-configsync/security/ci-pipeline/00-bootstrap-ci-project
+    cd terraform-cloudbuild-configsync/00-bootstrap-ci-project
     ```
 
-1. Copy terraform.tfvars.example file as terraform.tfvars, update the `project_id` with CI Pipeline project ID and `default_region` with location in where the CI Pipeline resources would be deployed
+1. Copy terraform.tfvars.example file as terraform.tfvars, update the variables for bootstraping the CI pipeline projects and resources
     ```bash
     cp terraform.tfvars.example terraform.tfvars
     ```
-   Update the following variables to 
-
-    `project_id= "your-project-id"`
-
-    `default_region= "australia-southeast2"`
 
    Add additional variables in `terraform.tfvars` to override the variables' value defined in `variable.tf` if required
 
@@ -72,16 +55,17 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
     terraform apply
     ```
 
-### Deploy GCE resource using the CI Pipeline
+### Deploy sample infrastructure using Cloud Build in the newly created CI pipeline project
 
-In this example, we are deplyoing compute resource into the same project as the CI pipeline in `us-central1-a` zone
+In this example, we are deplyoing **sample** infrastructure that consists of 2 GKE clusters, enable Config Sync, Policy Controller into the same project as the CI pipeline
 
-1. Clone the new Cloud Source Repo created. In this example, the cloud source repo name is `app-infra` and the project name we referred for the CI Pipeline is `your-project-id`. Ignore the warning "You appear to have cloned an empty repository"
+1. Clone the new Cloud Source Repo created. In this example, the cloud source repo name is `app-infra` and the project name we referred for the CI Pipeline is `ci-project-id`. Replace the `ci-project-id` with the new CI pipeline project ID. Ignore the warning "You appear to have cloned an empty repository"
+
     ```bash
     cd ~
     export REPO_NAME=app-infra
-    export PROJECT_ID=your-project-id
-    gcloud source repos clone app-infra --project=your-project-id
+    export PROJECT_ID=ci-project-id
+    gcloud source repos clone app-infra --project=ci-project-id
     ```
 
 1. Navigate to the repo and change to a non prod branch, for example `dev` branch
@@ -91,17 +75,18 @@ In this example, we are deplyoing compute resource into the same project as the 
    ```
 
 
-1. Copy contents of [sample-compute](sample-compute/) to the new app-infra repo. `sample-compute` directory contains Terraform configurations example to deploy compute resource using the new CI Pipeline. You can create other resources by adding Terraform configurations into a new directory. Cloud Build will test and/or deploy any resources defined in sub-directories under app-infra/ directory
+1. Copy contents of [gke-configsync](gke-configsync/) to the new app-infra repo. `gke-configsync` directory contains Terraform configurations example to deploy compute resource using the new CI Pipeline. You can create other resources by adding Terraform configurations into a new directory. Cloud Build will test and/or deploy any resources defined in sub-directories under app-infra/ directory
     ```bash
-    cp -R ~/terraform-cloudbuild-configsync/security/ci-pipeline/sample-compute .
+    cp -R ~/terraform-cloudbuild-configsync/gke-configsync .
     ```
-1. Update terraform.tfvars file under sample-compute directory to the project ID where the GCE instance will be deployed. In this example it will be the same project as the CI pipeline `your-project-id`
+1. Update terraform.tfvars file under gke-configsync directory to the project ID where the GCE instance will be deployed. In this example it will be the same project as the CI pipeline `your-project-id`
     ```bash
-    project_id="your-proejct-id"
+project_id = "ci-project-id"
     ```
-1. Copy Cloud Build configuration files [build-config](build-config/) for Terraform
+    Replace `ci-project-id` with the new CI pipeline project ID
+1. Copy Cloud Build configuration files [build](build/) for Terraform
     ```bash
-    cp -R ~terraform-cloudbuild-configsync/build-config/cloudbuild-* .
+    cp -R ~terraform-cloudbuild-configsync/build/cloudbuild-* .
     ```
 1. Commit your changes
     ```bash
@@ -119,4 +104,6 @@ In this example, we are deplyoing compute resource into the same project as the 
     git checkout -b main
     git push origin main
     ```
-1. Verify that the CI Pipeline build is completed successfully and a GCE instance is created through Cloud Console
+1. Verify that the CI Pipeline build is completed successfully and the GKE clusters are deployed successfully with Config Sync enabled, and Config objects are synced to the new cluster. You can check the status of the CI Pipeline build in the Cloud Console
+
+> ConfigSync is configured to sync the config objects to the new cluster using the Root repo (unstructured) from this sample [repository](https://github.com/hyperionian/config-management) under `config-root` directory.

@@ -1,6 +1,6 @@
 timeout: 1200s
 substitutions:
-  _BASE_DIR: 'base-resources'
+  _BASE_DIR: 'gke-configsync'
 steps:
 - id: 'setup'
   name: $_DEFAULT_REGION-docker.pkg.dev/$PROJECT_ID/$_GAR_REPOSITORY/terraform
@@ -19,12 +19,13 @@ steps:
 # [START Terraform plan]
 - id: 'terraform plan'
   name: $_DEFAULT_REGION-docker.pkg.dev/$PROJECT_ID/$_GAR_REPOSITORY/terraform
-  entrypoint: 'sh'
+  entrypoint: /bin/bash
   args:
   - -c
   - |
-      set -eo pipefail
       cd ${_BASE_DIR}
       terraform fmt -recursive -check -diff .
       terraform init
       terraform plan -input=false || exit 1
+options:
+  logging: CLOUD_LOGGING_ONLY
