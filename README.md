@@ -16,7 +16,7 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
 
 
 1. Clone this repo
-
+    ```
     cd ~
     git clone https://github.com/hyperionian/terraform-cloudbuild-configsync.git
     ```
@@ -27,10 +27,10 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:-----:|
-| org_id | Org ID where the CI pipeline is deployed. | `string` | n/a | yes |
-| billing_account| Billing account for the new CI pipeline project  | `string` | australila-southeast1 | yes|
+| org_id | Org ID where the CI pipeline is deployed. | `string` | | yes |
+| billing_account| Billing account for the new CI pipeline project  | `string` | | yes|
 | group_org_admins | Google Groups for Org admin users | `string` | n/a | yes |
-| default_region| Region for the CI pipeline components such as Cloud Storage, Artifact Registry| `string` | n/a | yes |
+| default_region| Region for the CI pipeline components such as Cloud Storage, Artifact Registry| `string` | us-central1 | yes |
 
 
 1. Change into [00-bootstrap-ci-project](00-bootstrap-ci-project/)
@@ -40,6 +40,7 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
     ```
 
 1. Copy terraform.tfvars.example file as terraform.tfvars, update the variables for bootstraping the CI pipeline projects and resources
+
     ```bash
     cp terraform.tfvars.example terraform.tfvars
     ```

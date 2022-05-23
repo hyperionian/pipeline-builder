@@ -110,17 +110,21 @@ variable "cb_project_iam_permissions" {
   description = "List of permissions granted to Cloud Build service accounts for the new Project. Update this list if you want to grant more permissions to deploy other Google Cloud resources."
   type        = list(string)
   default = [
-    "roles/compute.networkAdmin",
+   "roles/compute.networkAdmin",
     "roles/iam.securityAdmin",
     "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountUser",
     "roles/logging.configWriter",
+    "roles/logging.logWriter",
     "roles/compute.admin",
     "roles/pubsub.editor",
     "roles/cloudfunctions.developer",
     "roles/container.clusterAdmin",
     "roles/gkehub.editor",
-    "roles/container.clusterAdmin",
-    "roles/gkehub.editor"
+    "roles/container.admin",
+    "roles/gkehub.editor",
+    "roles/source.admin",
+    "roles/serviceusage.serviceUsageAdmin"
   ]
 }
 variable "sa_enable_impersonation" {
