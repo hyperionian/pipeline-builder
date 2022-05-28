@@ -1,1 +1,3 @@
 project_id = "project_example"
+
+compute_serviceaccount = "project-service-account@project_example.iam.gserviceaccount.com"

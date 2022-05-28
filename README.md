@@ -60,13 +60,13 @@ You can use Google Cloud Shell for bootstrapping the CI Pipeline into existing G
 
 In this example, we are deplyoing **sample** infrastructure that consists of 2 GKE clusters, enable Config Sync, Policy Controller into the same project as the CI pipeline
 
-1. Clone the new Cloud Source Repo created. In this example, the cloud source repo name is `app-infra` and the project name we referred for the CI Pipeline is `ci-project-id`. Replace the `ci-project-id` with the new CI pipeline project ID. Ignore the warning "You appear to have cloned an empty repository"
+1. Clone the new Cloud Source Repo created. In this example, the cloud source repo name is `app-infra`. Replace the `ci-project-id` with the new CI pipeline project ID. Ignore the warning "You appear to have cloned an empty repository"
 
     ```bash
     cd ~
     export REPO_NAME=app-infra
     export PROJECT_ID=ci-project-id
-    gcloud source repos clone app-infra --project=ci-project-id
+    gcloud source repos clone app-infra --project=<ci-project-id>
     ```
 
 1. Navigate to the repo and change to a non prod branch, for example `dev` branch
@@ -80,12 +80,18 @@ In this example, we are deplyoing **sample** infrastructure that consists of 2 G
     ```bash
     cp -R ~/terraform-cloudbuild-configsync/gke-configsync .
     ```
-1. Update terraform.tfvars file under gke-configsync directory to the project ID where the GCE instance will be deployed. In this example it will be the same project as the CI pipeline `your-project-id`
+1. Rename terraform.tfvars.example as terraform.tfvars file under gke-configsync directory and update it with the  project ID where the GKE clusters will be deployed and Node Pool service account to use. In this example, it would be the same project as the CI pipeline project and the service account for the Node pool would be the new  service account created by the bootstrap configurations. It usually has the service account email in the format of project-service-account@\<ci-project-id\>.iam.gserviceaccount.com
+
     ```bash
-project_id = "ci-project-id"
+    project_id = <ci-project-id>
+    compute_serviceaccount = project-service-account@<ci-project-id>.iam.gserviceaccount.com
     ```
+    
     Replace `ci-project-id` with the new CI pipeline project ID
-1. Copy Cloud Build configuration files [build](build/) for Terraform
+1. Rename backend.tf.example file as backend.tf
+
+1. Copy Cloud Build configuration files in [build](build/) to the new app-infra repo.
+
     ```bash
     cp -R ~terraform-cloudbuild-configsync/build/cloudbuild-* .
     ```

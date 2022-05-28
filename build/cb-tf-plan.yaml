@@ -10,7 +10,7 @@ steps:
   - |
     tf_sa_email=${_TF_SA_EMAIL}
     if [[ -n ${tf_sa_email} ]]; then
-      echo "Setting up gcloud for impersonation"
+      echo "Setting up gcloud CLI for impersonation"
       gcloud config set auth/impersonate_service_account $tf_sa_email
     fi
     echo "Adding bucket information to backends"
