@@ -3,7 +3,7 @@
 *******************************************/
 
 variable "org_id" {
-  description = "GCP Organization ID"
+  description = "Google Cloud Organization ID"
   type        = string
 }
 
