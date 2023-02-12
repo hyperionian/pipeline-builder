@@ -1,5 +1,6 @@
 [user]
   email = khelikoh@outlook.com
-  signingkey = 31459F99F2D11092
+  signingkey = 6C2CA212267CA2F99AB5EBF631459F99F2D11092
 
 [gpg]
+  program = gpg

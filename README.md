@@ -1,7 +1,7 @@
 # CI Pipeline Builder
 
 ## Overview
-This Terraform configurations example is used to bootstrap a CI pipeline for IaC deployment by creating a new CI pipeline project under Organization you have access to.
+This Terraform Configuration example is used to bootstrap a CI pipeline for IaC deployment by creating a new CI pipeline project under Organization you have access to.
 
 ## [Bootstrap CI Pipeline](00-bootstrap-ci-project/)
 
